@@ -1,0 +1,7 @@
+Features Required
+Authentication
+User Management
+Expense Management
+Dashboard
+Reports
+Charts
