@@ -132,12 +132,12 @@ export default function Sidebar() {
 
       <div className="border-t border-slate-600 p-4">
         <div className="flex items-center gap-3 px-4 py-2 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all duration-200">
-          <div className="w-11 h-11 rounded-full theme-bg flex items-center justify-center text-white font-medium text-lg shadow-md">
+          <div className="w-11 h-11 rounded-full theme-bg flex items-center justify-center sidebar-text font-medium text-xl shadow-md">
             {details.username?.charAt(0).toUpperCase()}
           </div>
 
           <div className="flex flex-col">
-            <span className="text-white font-semimedium capitalize">
+            <span className="theme-text font-semimedium capitalize">
               {details.username}
             </span>
             <span className="text-xs theme-text flex items-center gap-1">
