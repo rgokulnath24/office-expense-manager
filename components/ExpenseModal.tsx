@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
-import { Check, ChevronsUpDown, Loader2 } from "lucide-react";
+import { Check, ChevronsUpDown, Loader2, Pencil, PlusCircle, Receipt } from "lucide-react";
 
 import {
   Dialog,
@@ -45,8 +45,8 @@ export default function ExpenseModal({
 
   const [form, setForm] = useState({
     expense_type: "Tea",
-    amount: "",
-    notes: "",
+    amount: 0,
+    notes: "Cash",
     expense_date: new Date().toISOString().split("T")[0],
     paid_by: "",
     expense_session: "FN",
@@ -65,7 +65,7 @@ export default function ExpenseModal({
     if (selectedExpenses) {
       setForm({
         expense_type: selectedExpenses.expense_type,
-        amount: selectedExpenses.amount,
+        amount: Number(selectedExpenses.amount),
         notes: selectedExpenses.notes,
         expense_date: selectedExpenses.expense_date,
         paid_by: selectedExpenses.paid_by ?? "",
@@ -74,8 +74,8 @@ export default function ExpenseModal({
     } else {
       setForm({
         expense_type: "Tea",
-        amount: "",
-        notes: "",
+        amount: 0,
+        notes: "Cash",
         expense_date: new Date().toISOString().split("T")[0],
         paid_by: "",
         expense_session: "FN",
@@ -115,7 +115,7 @@ export default function ExpenseModal({
 
         toast.success("Expense Updated Successfully");
       } else {
-        const { error } = await supabase
+        const { error, data } = await supabase
           .from("expenses")
           .insert({
             user_id: user.id,
@@ -126,18 +126,19 @@ export default function ExpenseModal({
             paid_by: form.paid_by,
             expense_session: form.expense_session,
           });
+        console.log("Inserted Response", data)
 
         if (error) throw error;
 
-        toast.success("Expense Added Successfully");
+        // toast.success("Expense Added Successfully");
       }
 
       await fetchExpenses();
 
       setForm({
         expense_type: "Tea",
-        amount: "",
-        notes: "",
+        amount: 0,
+        notes: "Cash",
         expense_date: new Date().toISOString().split("T")[0],
         paid_by: "",
         expense_session: "FN",
@@ -155,104 +156,185 @@ export default function ExpenseModal({
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogContent className="sm:max-w-md theme-bg">
         <DialogHeader>
-          <DialogTitle className="font-bold tracking-wide">{selectedExpenses ? "Edit Expense" : "Add Expense"}</DialogTitle>
+          <DialogTitle className="flex items-center justify-center gap-2 font-medium tracking-wide">
+  {selectedExpenses ? (
+    <>
+      <Pencil className="h-5 w-5" />
+      Edit Expense
+    </>
+  ) : (
+    <>
+      <Receipt className="h-5 w-5" />
+      Add Expense
+    </>
+  )}
+</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-6">
-          <input
-            type="date"
-            name="expense_date"
-            value={form.expense_date}
-            onChange={handleChange}
-            className="w-full rounded-lg border p-2"
-          />
-          <select
-            name="expense_type"
-            value={form.expense_type}
-            onChange={handleChange}
-            className="w-full rounded-lg border p-2"
-          >
-            <option>Tea</option>
-            <option>Coffee</option>
-            <option>Snacks</option>
-            <option>Lunch</option>
-            <option>Others</option>
-          </select>
-          <select
-            name="expense_session"
-            value={form.expense_session}
-            onChange={handleChange}
-            className="w-full rounded-lg border p-2"
-          >
-            {SESSIONS.map((session) => (
-              <option key={session} value={session}>
-                {session}
-              </option>
-            ))}
-          </select>
-          <Popover open={openPaidBy} onOpenChange={setOpenPaidBy}>
-            <PopoverTrigger
-              className="flex w-full items-center justify-between rounded-lg border px-3 py-2 cursor-pointer"
+
+          {/* Expense Date */}
+          <div className="space-y-2">
+            <label
+              htmlFor="expense_date"
+              className="text-sm font-medium text-gray-500"
             >
-              <span>{form.paid_by || "Select Paid By"}</span>
-              <ChevronsUpDown className="h-4 w-4 opacity-50" />
-            </PopoverTrigger>
+              Expense Date
+            </label>
 
-            <PopoverContent className="w-[var(--anchor-width)] p-0">
-              <Command className="theme-bg">
-                <CommandInput placeholder="Search user..." />
+            <input
+              id="expense_date"
+              type="date"
+              name="expense_date"
+              value={form.expense_date}
+              onChange={handleChange}
+              className="w-full rounded-lg border p-2 mt-2"
+            />
+          </div>
 
-                <CommandEmpty>No user found.</CommandEmpty>
+          {/* Expense Type */}
+          <div className="space-y-2">
+            <label
+              htmlFor="expense_type"
+              className="text-sm font-medium text-gray-500"
+            >
+              Expense Type
+            </label>
 
-                <CommandGroup>
-                  {USERS.map((user) => (
-                    <CommandItem
-                      key={user}
-                      value={user}
-                      onSelect={(value) => {
-                        setForm((prev) => ({
-                          ...prev,
-                          paid_by: value,
-                        }));
-                        setOpenPaidBy(false);
-                      }}
-                    >
-                      <Check
-                        className={cn(
-                          "mr-2 h-4 w-4",
-                          form.paid_by === user ? "opacity-100" : "opacity-0"
-                        )}
-                      />
-                      {user}
-                    </CommandItem>
-                  ))}
-                </CommandGroup>
-              </Command>
-            </PopoverContent>
-          </Popover>
-          <input
-            type="number"
-            name="amount"
-            placeholder="Amount"
-            value={form.amount}
-            onChange={handleChange}
-            className="w-full rounded-lg border p-2"
-          />
+            <select
+              id="expense_type"
+              name="expense_type"
+              value={form.expense_type}
+              onChange={handleChange}
+              className="w-full rounded-lg border p-2 mt-2"
+            >
+              <option>Tea</option>
+              <option>Coffee</option>
+              <option>Snacks</option>
+              <option>Food</option>
+              <option>Pooja</option>
+              <option>Others</option>
+            </select>
+          </div>
 
-          <textarea
-            name="notes"
-            placeholder="Notes"
-            value={form.notes}
-            onChange={handleChange}
-            className="w-full rounded-lg border p-2"
-          />
+          {/* Expense Session */}
+          <div className="space-y-2">
+            <label
+              htmlFor="expense_session"
+              className="text-sm font-medium text-gray-500"
+            >
+              Session
+            </label>
 
+            <select
+              id="expense_session"
+              name="expense_session"
+              value={form.expense_session}
+              onChange={handleChange}
+              className="w-full rounded-lg border p-2 mt-2"
+            >
+              {SESSIONS.map((session) => (
+                <option key={session} value={session}>
+                  {session}
+                </option>
+              ))}
+            </select>
+          </div>
 
+          {/* Paid By */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-gray-500 ">
+              Paid By
+            </label>
 
+            <Popover open={openPaidBy} onOpenChange={setOpenPaidBy}>
+              <PopoverTrigger
+                className="flex w-full items-center justify-between rounded-lg border px-3 py-2 cursor-pointer mt-2"
+              >
+                <span>{form.paid_by || "Select Paid By"}</span>
+                <ChevronsUpDown className="h-4 w-4 opacity-50" />
+              </PopoverTrigger>
+
+              <PopoverContent className="w-[var(--anchor-width)] p-0">
+                <Command className="theme-bg">
+                  <CommandInput placeholder="Search user..." />
+
+                  <CommandEmpty>No user found.</CommandEmpty>
+
+                  <CommandGroup>
+                    {USERS.map((user) => (
+                      <CommandItem
+                        key={user}
+                        value={user}
+                        onSelect={(value) => {
+                          setForm((prev) => ({
+                            ...prev,
+                            paid_by: value,
+                          }));
+                          setOpenPaidBy(false);
+                        }}
+                      >
+                        <Check
+                          className={cn(
+                            "mr-2 h-4 w-4",
+                            form.paid_by === user
+                              ? "opacity-100"
+                              : "opacity-0"
+                          )}
+                        />
+                        {user}
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                </Command>
+              </PopoverContent>
+            </Popover>
+          </div>
+
+          {/* Amount */}
+          <div className="space-y-2">
+            <label
+              htmlFor="amount"
+              className="text-sm font-medium text-gray-500 "
+            >
+              Amount
+            </label>
+
+            <input
+              id="amount"
+              type="number"
+              name="amount"
+              placeholder="Enter amount"
+              value={form.amount === 0 ? "" : form.amount}
+              onChange={handleChange}
+              className="w-full rounded-lg border p-2 mt-2"
+            />
+          </div>
+
+          {/* Notes */}
+          <div className="space-y-2">
+            <label
+              htmlFor="notes"
+              className="text-sm font-medium text-gray-500"
+            >
+              Notes
+            </label>
+
+            <textarea
+              id="notes"
+              name="notes"
+              placeholder="Enter notes"
+              value={form.notes}
+              onChange={handleChange}
+              className="w-full rounded-lg border p-2 mt-2"
+            />
+          </div>
+
+          {/* Save Button */}
           <button
             onClick={handleSave}
             disabled={loading}
-            className="w-full rounded-lg button-bg  py-2 text-white text-bold"
+            className="w-full rounded-lg button-bg py-2 text-white text-medium"
           >
             {loading ? (
               <div className="flex items-center justify-center gap-2">
@@ -260,9 +342,10 @@ export default function ExpenseModal({
                 <Loader2 size={18} className="animate-spin" />
               </div>
             ) : (
-              ` ${selectedExpenses ? "Edit Expense" : "Save Expense"}`
+              `${selectedExpenses ? "Edit Expense" : "Save Expense"}`
             )}
           </button>
+
         </div>
       </DialogContent>
     </Dialog>

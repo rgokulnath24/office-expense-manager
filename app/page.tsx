@@ -72,7 +72,7 @@ export default function Login() {
   return (
     <div className="flex h-screen items-center justify-center">
       <div className="w-[340px] space-y-4 rounded-2xl border p-6 theme-text">
-        <h1 className="text-center text-2xl font-bold p-1">Login</h1>
+        <h1 className="text-center text-2xl font-medium p-1">Login</h1>
         <form onSubmit={handleLogin} autoComplete="on">
           <input
             type="email"

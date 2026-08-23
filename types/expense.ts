@@ -1,7 +1,7 @@
 export interface Expense {
   id: string;
   user_id: string;
-  amount: string;
+  amount: number;
   expense_type: string;
   notes: string;
   expense_date: string;

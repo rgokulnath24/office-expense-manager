@@ -11,7 +11,6 @@ import { supabase } from "@/lib/supabase";
 import {
   LayoutDashboard,
   BarChart3,
-  User,
   LogOut,
   Receipt,
 } from "lucide-react";
@@ -95,7 +94,7 @@ export default function Sidebar() {
       <aside className="fixed left-0 top-0 h-screen w-64 button-bg text-white flex flex-col">
 
       <div className="p-4 border-b border-slate-700">
-        <h1 className="flex items-center gap-3 text-2xl font-bold tracking-tight theme-text">
+        <h1 className="flex items-center gap-3 text-2xl font-medium tracking-tight theme-text">
           <Image
             src="/logo.jpg"
             alt="Expense Manager Logo"
@@ -133,12 +132,12 @@ export default function Sidebar() {
 
       <div className="border-t border-slate-600 p-4">
         <div className="flex items-center gap-3 px-4 py-2 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all duration-200">
-          <div className="w-11 h-11 rounded-full theme-bg flex items-center justify-center text-white font-bold text-lg shadow-md">
+          <div className="w-11 h-11 rounded-full theme-bg flex items-center justify-center text-white font-medium text-lg shadow-md">
             {details.username?.charAt(0).toUpperCase()}
           </div>
 
           <div className="flex flex-col">
-            <span className="text-white font-semibold capitalize">
+            <span className="text-white font-semimedium capitalize">
               {details.username}
             </span>
             <span className="text-xs theme-text flex items-center gap-1">

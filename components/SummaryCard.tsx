@@ -15,7 +15,7 @@ export default function SummaryCard({
         <div>
           <p className="text-sm text-gray-500">{title}</p>
 
-          <h2 className="mt-2 text-3xl font-bold">
+          <h2 className="mt-2 text-3xl font-medium">
             {value}
           </h2>
         </div>

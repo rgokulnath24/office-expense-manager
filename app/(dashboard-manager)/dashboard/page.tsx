@@ -1,9 +1,34 @@
 "use client";
+
 import SummaryCard from "@/components/SummaryCard";
+import DashboardSessions from "@/components/DashboardSessions";
+import DashboardPayments from "@/components/DashboardPayments";
+import RecentExpenses from "@/components/RecentExpenses";
+import QuickActions from "@/components/QuickActions";
+
 import { supabase } from "@/lib/supabase";
-import { Calendar, Coffee, Receipt, Wallet } from "lucide-react";
+import {
+  Calendar,
+  Coffee,
+  Receipt,
+  Wallet,
+} from "lucide-react";
+
 import { useEffect, useState } from "react";
 import CountUp from "react-countup";
+import { formatDate } from "@/utils/commonFunction";
+
+interface Expense {
+  id: string;
+  expense_date: string;
+  expense_type: string;
+  expense_session: string;
+  paid_by: string;
+  amount: number;
+  notes: string;
+  user_id: string;
+  is_deleted: number;
+}
 
 export default function Dashboard() {
   const [summary, setSummary] = useState({
@@ -13,34 +38,24 @@ export default function Dashboard() {
     totalEntries: 0,
   });
 
+  const [todayExpenses, setTodayExpenses] = useState<Expense[]>([]);
+  const [recentExpenses, setRecentExpenses] = useState<Expense[]>([]);
+
   useEffect(() => {
     fetchSummary();
-  }, [])
-  const fetchSummary = async () => {
-
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) return;
-
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("role")
-      .eq("id", user.id)
-      .single();
+  }, []);
 
 
-    const isAdmin = profile?.role === "admin";
+  async function fetchSummary() {
 
     let query = supabase
       .from("expenses")
       .select("*")
-      .eq("is_deleted", 0);
+      .eq("is_deleted", 0)
+      .order("expense_date", {
+        ascending: false,
+      });
 
-    if (!isAdmin) {
-      query = query.eq("user_id", user.id);
-    }
 
     const { data: expenses, error } = await query;
 
@@ -49,79 +64,184 @@ export default function Dashboard() {
       return;
     }
 
-    const todayDate = new Date().toISOString().split("T")[0];
-    const day = new Date().getDay();
+    const expenseData = (expenses || []) as Expense[];
 
     const today = new Date();
 
+    const todayDate = formatDate(today);
 
-    const StartOfMonth = new Date(today);
-    StartOfMonth.setDate(1);
-    StartOfMonth.setHours(0, 0, 0, 0);
+    const startOfMonth = new Date(
+      today.getFullYear(),
+      today.getMonth(),
+      1
+    );
 
-    const EndOfMonth = new Date(
+
+    startOfMonth.setHours(0, 0, 0, 0);
+
+    const endOfMonth = new Date(
       today.getFullYear(),
       today.getMonth() + 1,
       0
     );
 
-    EndOfMonth.setHours(23, 59, 59, 999);
+    endOfMonth.setHours(23, 59, 59, 999);
 
+
+    const day = today.getDay();
+
+    const diff = day === 0 ? 6 : day - 1;
 
     const monday = new Date(today);
 
-    const diff = day === 0 ? 6 : day - 1;
+
     monday.setDate(today.getDate() - diff);
     monday.setHours(0, 0, 0, 0);
 
-
-
     const saturday = new Date(monday);
+
     saturday.setDate(monday.getDate() + 5);
     saturday.setHours(23, 59, 59, 999);
 
 
-
-    const weekExpense = expenses.filter((expense) => {
-      const expenseDate = new Date(expense.expense_date);
-
-      return expenseDate >= monday && expenseDate <= saturday;
-    });
-
-    const monthlyExpense = expenses.filter((expense) => {
-      const expenseDate = new Date(expense.expense_date);
-
-      return expenseDate >= StartOfMonth && expenseDate <= EndOfMonth;
-    });
-
-
-
-
-    const totalWeekExpense = weekExpense.reduce(
-      (sum, expense) => sum + Number(expense.amount),
-      0
-    );
-    const monthlyExpenses = monthlyExpense.reduce(
-      (sum, expense) => sum + Number(expense.amount),
-      0
+    const todayExpense = expenseData.filter(
+      (expense) =>
+        expense.expense_date === todayDate
     );
 
-    const todayExpense = expenses.filter((expense) => expense.expense_date == todayDate);
-    const totalTodayExpense = todayExpense.reduce((sum, total) => sum + total.amount, 0);
+    const weekExpense = expenseData.filter( 
+      (expense) => {
+        const expenseDate = new Date(
+          expense.expense_date
+        );
 
+        return (
+          expenseDate >= monday &&
+          expenseDate <= saturday
+        );
+      }
+    );
 
-    const totalEntries = todayExpense.length;
+    const monthlyExpense = expenseData.filter(
+      (expense) => {
+        const expenseDate = new Date(
+          expense.expense_date
+        );
 
+        return (
+          expenseDate >= startOfMonth &&
+          expenseDate <= endOfMonth
+        );
+      }
+    );
 
+  
 
-    setSummary((prev) => ({ ...prev, today: totalTodayExpense, totalEntries: totalEntries, week: totalWeekExpense, month: monthlyExpenses }))
+    const totalToday = todayExpense.reduce(
+      (sum, expense) =>
+        sum + Number(expense.amount),
+      0
+    );
 
-  };
+    const totalWeek = weekExpense.reduce(
+      (sum, expense) =>
+        sum + Number(expense.amount),
+      0
+    );
 
-  return (<>
+    const totalMonth = monthlyExpense.reduce(
+      (sum, expense) =>
+        sum + Number(expense.amount),
+      0
+    );
+
+    setSummary({
+      today: totalToday,
+      week: totalWeek,
+      month: totalMonth,
+      totalEntries: todayExpense.length,
+    });
+
+    setTodayExpenses(todayExpense);
+
+    setRecentExpenses(
+      expenseData.slice(0, 5)
+    );
+  }
+
+  // -----------------------
+  // Session totals
+  // -----------------------
+
+  const sessionTotals = todayExpenses.reduce(
+    (
+      acc: Record<
+        string,
+        {
+          amount: number;
+          entries: number;
+        }
+      >,
+      expense
+    ) => {
+      const session =
+        expense.expense_session || "Other";
+
+      if (!acc[session]) {
+        acc[session] = {
+          amount: 0,
+          entries: 0,
+        };
+      }
+
+      acc[session].amount += Number(
+        expense.amount
+      );
+
+      acc[session].entries += 1;
+
+      return acc;
+    },
+    {}
+  );
+
+  // -----------------------
+  // Payer totals
+  // -----------------------
+
+  const payerTotals = todayExpenses.reduce(
+    (
+      acc: Record<string, number>,
+      expense
+    ) => {
+      const person =
+        expense.paid_by || "Unknown";
+
+      acc[person] =
+        (acc[person] || 0) +
+        Number(expense.amount);
+
+      return acc;
+    },
+    {}
+  );
+
+  const payerEntries = Object.entries(
+    payerTotals
+  ).sort(
+    ([, amountA], [, amountB]) =>
+      amountB - amountA
+  );
+
+  return (
     <div className="flex-1 p-8">
-      <h1 className="text-3xl font-bold theme-text">Dashboard</h1>
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4 mt-8">
+
+      <h1 className="text-3xl font-medium theme-text">
+        Have a Break !
+      </h1>
+
+      {/* KPI */}
+      <div className="mt-8 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
 
         <SummaryCard
           title="Today's Spend"
@@ -148,12 +268,39 @@ export default function Dashboard() {
         />
 
         <SummaryCard
-          title="Total Entries"
-          value={<CountUp end={summary.totalEntries} duration={0.3} />}
+          title="Today's Entries"
+          value={
+            <CountUp
+              end={summary.totalEntries}
+              duration={0.3}
+            />
+          }
           icon={<Receipt />}
         />
 
       </div>
+
+      {/* Sessions + Payments */}
+      <div className="mt-8 grid gap-6 lg:grid-cols-2">
+
+        <DashboardSessions
+          sessionTotals={sessionTotals}
+        />
+
+        <DashboardPayments
+          payerEntries={payerEntries}
+        />
+
+      </div>
+
+      {/* Recent Expenses */}
+      <RecentExpenses
+        expenses={recentExpenses}
+      />
+
+      {/* Quick Actions */}
+      <QuickActions />
+
     </div>
-  </>)
+  );
 }
